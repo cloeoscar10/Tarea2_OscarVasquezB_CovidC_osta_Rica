@@ -1,0 +1,317 @@
+---
+title: "Index"
+author: "Oscar_Vasquez_B"
+format: html
+editor: visual
+---
+
+# **Datos Covid Costa Rica**
+
+Tarea 2 Curso de Programación
+
+Maestría en Gestión del Recurso Hídrico
+
+Universidad de Costa Rica
+
+## Visualización de datos generales y positivos para Costa Rica
+
+Este trabajo presenta un ejercicio de ordenamiento (*Tidy*), transformación y visualización de datos del Covid-19 en Costa Rica, a través del lenguaje [R](https://www.r-project.org/) con el sistema de publicación [**Quarto**](https://quarto.org/)
+
+Primero, se procedió a cargar los paquetes de visualización y manipulación de datos
+
+```{r}
+
+#| label: Instalación de readr, plotly, dplyr y DT
+#| code-fold: true
+#| message: false
+#| warning: false
+ 
+library(ggplot2)
+
+library(readr)
+
+library(plotly)
+
+library(DT)
+
+library(dplyr)
+
+library(tidyverse)
+
+library(plotly)
+
+library(ggthemes)
+
+```
+
+Luego se seleccionó y cargó los archivos con los datos de Covid-19 para Costa Rica. También,se seleccionó las columnas de interés (columnas fecha, capositivos acumulados de hombres, positivos aumulados de mujeres, casos poisitivos acumulados de menores, casos positivos acumulados de adultos mayores y casos positivos nuevos) con las que se trabajó en el data frame.
+
+```{r}
+#| label: cargar-datos-covid-general y Selección de columnas
+#| message: false
+#| warning: false
+
+covid_general <- read_delim(file = "C:/Users/oscar/Desktop/tarea2/05_30_22_CSV_GENERAL.csv", col_select = c("FECHA",                                           "hom_posi",
+                  "muj_posi",
+                  "menor_posi", 
+                  "adul_posi",
+                  "am_posi",
+                  "nue_posi"),
+                  locale = locale(encoding = "WINDOWS-1252"))
+```
+
+```{r}
+#| label: cargar-datos-covid-positivos
+#| message: false
+#| warning: false
+covid_positivos <- read_delim("C:/Users/oscar/Desktop/tarea2/05_30_22_CSV_POSITIVOS.csv",
+          locale = locale(encoding = "WINDOWS-1252"))
+```
+
+-   Durante la carga de los documentos se utilizó el la encapsulación con la herramienta "locale" y el formato "WINDOWS-1252", para prevenir errores legados a símbolos y marcas del lenguaje local de los archivos.
+
+Posteriormente se exploró la estructura de los datos y visualizamos las tablas de datos o "tibbles".
+
+```{r}
+#| label: Muestra de datos covid_general y covid_positivos
+#| message: false
+#| warning: false
+#| code-fold: true
+str(covid_general)
+View(covid_general)
+
+
+str(covid_positivos)
+View(covid_positivos)
+
+options(scipen = 7)
+```
+
+Podemos observar algunas características de nuestos datos como la presencia de 816 obervaciones (líneas) y 144 variables (columnas) para covid general y 84 observaciones, así como 811 varaibles para covid positivos, además de los nombres de las columnas y variables.
+
+Seguidamente, se actualizó los nombres de las columnas para covid general.
+
+```{r}
+#| label: Cambio en la rotulación de columnas
+#| message: false
+#| warning: false
+#| code-fold: true
+
+covid_general <- covid_general|>
+  rename(Fecha = FECHA,Casos_positivos_acumulados_en_hombres = hom_posi, Casos_positivos_acumulados_mujeres = muj_posi, Casos_positivos_acumulados_menores_edad = menor_posi, Casos_positivos_acumulados_adultos = adul_posi, Casos_positivos_acumulados_adultos_mayores = am_posi, Casos_positivos_acumulados_nuevos = nue_posi)
+```
+
+Luego se cambio el formato de datos para la columna Fecha para que fuera reconocido como una fecha y no un carácter.
+
+```{r}
+#| label: Conversión del formato character a Date de la columna fecha
+#| message: false
+#| warning: false
+#| code-fold: true
+
+covid_general <- covid_general|>
+  mutate (Fecha = as.Date(Fecha, format = "%d/%m/%Y"))
+```
+
+Se removió las filas no necesarias como los valores no disponibles (NAs).
+
+```{r}
+#| label: Filas con valor diferente a NA en cualquier columna
+#| message: false
+#| warning: false
+#| code-fold: true
+covid_general <- 
+  covid_general |>
+  select(Fecha,
+         Casos_positivos_acumulados_en_hombres,
+         Casos_positivos_acumulados_mujeres,
+         Casos_positivos_acumulados_menores_edad,
+         Casos_positivos_acumulados_adultos,
+         Casos_positivos_acumulados_adultos_mayores,
+         Casos_positivos_acumulados_nuevos) |>
+  drop_na()
+
+```
+
+Se generó una tabla (**Tab. 1**) con los valores diarios de covid a partir de los datos generales.
+
+```{r}
+#| label: Tabla de datos
+#| code-fold: true
+#| message: false
+#| warning: false
+
+tabla_covid_general <-
+covid_general |>
+  datatable(options = list(
+    pageLength = 5,
+    language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
+  ))
+
+tabla_covid_general
+```
+
+**Tabla 1**. Valores diarios de Covid-19 para Costa Rica hasta el 30/05/2022
+
+Posteriormente, se visualizó mediante un gráfico de barras la cantidad de casos positivios acumulados por diariamente desde la fecha en que el primer caso fue detectado (**Fig. 1**).
+
+```{r}
+#| label: Grafico de barras, casos nuevos diarios
+#| code-fold: true
+grafico_casos_diarios <-
+covid_general |>
+  ggplot(aes(x = Fecha, y = Casos_positivos_acumulados_nuevos)) +
+  geom_col() +
+  ggtitle("Acumulado de casos nuevos por día") +
+  xlab("Fechas") +
+  ylab("Número de casos positivos") +
+  labs( caption = "Fuente: Ministerio de Salud de Costa Rica")
+  
+
+ggplotly(grafico_casos_diarios) |> 
+  config(locale = "es")
+
+```
+
+**Figura 1**. Acumulado diario de casos positivos de Covid-19 para Costa Rica del período del 10/03/2020 hasta 30/05/2022.
+
+Seguidamente se visualizó con un gráfico de líneas (**Fig. 2**) el comportamiento de los casos de covid-19 a lo largo del tiempo.
+
+```{r}
+#| label: Gráfico de líneas
+#| code-fold: true
+grafico_casos_acumulados_hombresymujeres <-
+  covid_general |>
+  ggplot(aes(x = Fecha, y = value, color = variable))+
+    geom_line(aes(y = Casos_positivos_acumulados_en_hombres, color = "Hombres")) +
+  geom_line(aes(y = Casos_positivos_acumulados_mujeres, color = "Mujeres")) +
+  scale_color_manual(
+    "", values = c(
+      "Hombres" = "red",
+      "Mujeres" = "green")
+    ) +
+  ggtitle("Variación de los Casos Positivos entre hombres y mujeres") +
+  xlab("Fechas") +
+  ylab("Casos") +
+  labs( caption = "Fuente: Ministerio de Salud de Costa Rica")
+
+ggplotly(grafico_casos_acumulados_hombresymujeres) |> 
+  config(locale = "es")
+
+```
+
+**Figura 2**. Comportamiento acumulativo de los casos positivos de Covid-19 a lo largo del tiempo.
+
+Posteriormente, visualizó la evolución de los casos positivos en menores de edad, adultos y adultos mayores, de forma acumulada en el tiempo mediante un gráfico de líneas (**Fig. 3**).
+
+```{r}
+#| label: Gráfico de líneas con la evolución de los casos por grupos de edad
+#| code-fold: true
+casos_positivos_grupo_edad <-
+  covid_general |>
+  ggplot(aes(x = Fecha, y = value, color =      variable)) +
+  geom_line(aes(y =   
+          Casos_positivos_acumulados_menores_edad,
+          color = "Menores")) +
+  geom_line(aes(y = 
+          Casos_positivos_acumulados_adultos,
+          color = "Adultos")) +
+  geom_line(aes(y =
+          Casos_positivos_acumulados_adultos_mayores,
+          color = "Adultos mayores")) +
+  scale_color_manual(
+    "",
+    values = c(
+      "Menores" = "green",
+      "Adultos" = "blue",
+      "Adultos mayores" = "gold")
+    ) +
+  ggtitle("Distribución de casos por grupos de edad")+
+  xlab("Fechas (10/03/2020 hasta 30/05/2022)") +
+  ylab("Casos positivos por grupo")+
+  labs( caption = "Fuente: Ministerio de Salud de Costa Rica",
+       color = "Grupos de edad") +
+  theme_gray()
+
+ggplotly(casos_positivos_grupo_edad) |> 
+  config(locale = "es")
+
+```
+
+**Figura 3**. Acumulación de casos para grupos por edad a largo del tiempo : Menores (población menor 18 años), Adultos (población entre 18 y 64 años) y Adultos mayores (población de edad \>= 65 años)
+
+Seguidamente, se seleccionó las columnas de interés para el conjunto de datos covid_positivos
+
+```{r}
+#| label: Cambio se nombres y selección de columnas de interés
+#| code-fold: true
+#| message: false
+#| warning: false
+covid_positivos <-
+  covid_positivos |>
+  select(Provincia = provincia, Cantón = canton, positivos_hasta_30_mayo_2022 = "30/05/2022")
+
+View(covid_positivos)
+```
+
+Posteriormente como parte del tratamiento y depuración de los datos se removió los valores no disponibles NAs y Otros.
+
+```{r}
+#| label: Remoción de valores no disponibles y Otros
+#| code-fold: true
+#| message: false
+#| warning: false
+covid_positivos <- 
+  covid_positivos|>
+  drop_na()
+
+covid_positivos <- 
+  covid_positivos|>
+  filter(Cantón != "Otros")
+
+View(covid_positivos)
+
+```
+
+Una vez procesados los datos se generó una tabla (**Tab. 2**) para visualizar las columnsa y valores de interés
+
+```{r}
+#| label: Tabla para los datos de covid_positivo
+#| code-fold: true
+#| message: false
+#| warning: false
+tabla_covid_positivos <-
+covid_positivos |>
+  datatable(options = list(
+    pageLength = 5,
+    language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
+  ))
+
+tabla_covid_positivos
+```
+
+**Tabla 2**.Valores diarios positivos de Covid-19 por cantón hasta el 30/05/2022.
+
+Finalmente se creó un histograma para visualizar la distribución de los casos positivos por cantón (**Hist. 1**)
+
+```{r}
+#| label: Histograma para los datos de covid_positivo
+#| code-fold: true
+#| message: false
+#| warning: false
+histograma_covid_positivos_canton <-
+covid_positivos |>
+  ggplot(aes(x = positivos_hasta_30_mayo_2022))+
+  geom_histogram(bins = 9) +
+  ggtitle("Distribución de casos positivos por cantón")+
+  xlab("Cantidad de casos positivos") +
+  ylab("Frecuencia") +
+  labs(subtitle = "Datos de 82 cantones",
+       caption = "Fuente: Ministerio de Salud de Costa Rica",
+       fill = "Cantón") +
+  theme_economist()
+
+ggplotly(histograma_covid_positivos_canton) |> 
+  config(locale = 'es')
+
+```
